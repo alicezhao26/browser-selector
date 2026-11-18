@@ -1,0 +1,38 @@
+.wrap { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; display: grid; gap: 16px; }
+header { display: flex; align-items: center; gap: 12px; }
+h1 { font-size: 20px; margin: 0; }
+.sub { margin: 2px 0 0; color: var(--muted); }
+.status { color: var(--ok); font-weight: 500; transition: opacity .3s; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: grid; gap: 12px; }
+h2 { font-size: 15px; margin: 0; }
+h3 { font-size: 12px; margin: 6px 0 0; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.field { display: grid; gap: 6px; }
+.field > span { font-weight: 500; }
+.field small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.field.inline { grid-template-columns: 1fr auto; align-items: center; }
+textarea, input[type=number], select {
+  font: inherit; color: var(--text); background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px;
+}
+textarea { resize: vertical; width: 100%; }
+textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input[type=number] { width: 84px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 24px; align-items: center; }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+.hint { color: var(--muted); margin: 0; font-size: 12px; }
+.link { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font: inherit; }
+.link:hover { text-decoration: underline; }
+.cmds { display: grid; gap: 6px; }
+.cmd { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.keys { border-collapse: collapse; width: 100%; }
+.keys td { padding: 5px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.keys td:first-child { width: 42%; padding-right: 12px; }
+.keys tr:last-child td { border-bottom: 0; }
+.advanced summary { cursor: pointer; color: var(--muted); font-size: 12px; padding: 4px 0; }
+.advanced summary:hover { color: var(--text); }
+.advanced[open] summary { margin-bottom: 6px; }
+.footer-actions { display: flex; justify-content: flex-end; }
+@media (max-width: 520px) {
+  .field.inline { grid-template-columns: 1fr; }
+  .keys td:first-child { width: 50%; }
+}

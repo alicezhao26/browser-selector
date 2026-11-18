@@ -1,0 +1,9 @@
+{
+  "extName": { "message": "元素选择器 - Browser Selector" },
+  "extShortName": { "message": "元素选择器" },
+  "extDescription": { "message": "用快捷键选取任意页面元素，一键复制最佳 CSS 选择器 / XPath，并支持元素、可见区域和整页截图。" },
+  "actionTitle": { "message": "元素选择器 (Alt+C)" },
+  "cmdTogglePicker": { "message": "开启 / 关闭元素选择器" },
+  "cmdScreenshotVisible": { "message": "截取可见区域" },
+  "cmdScreenshotFull": { "message": "截取整个页面" }
+}

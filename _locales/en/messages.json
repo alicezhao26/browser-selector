@@ -1,0 +1,9 @@
+{
+  "extName": { "message": "Browser Selector" },
+  "extShortName": { "message": "Selector" },
+  "extDescription": { "message": "Pick any element with a shortcut, copy the best CSS selector / XPath, and take element, visible or full-page screenshots." },
+  "actionTitle": { "message": "Browser Selector (Alt+C)" },
+  "cmdTogglePicker": { "message": "Start / stop the element picker" },
+  "cmdScreenshotVisible": { "message": "Screenshot the visible area" },
+  "cmdScreenshotFull": { "message": "Screenshot the full page" }
+}

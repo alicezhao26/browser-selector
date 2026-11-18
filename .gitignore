@@ -1,0 +1,14 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# Chrome extension packaging (never publish the signing key)
+*.pem
+*.crx
+*.zip
+
+# OS / editor clutter
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Selector Playground</title>
+  <style>
+    :root { --bg: #fff; --text: #1b2030; --muted: #687089; --border: #e2e5ee; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f131c; --text: #e8ebf3; --muted: #8a93a8; --border: #2a3248; } }
+    :root[data-theme="dark"] { --bg: #0f131c; --text: #e8ebf3; --muted: #8a93a8; --border: #2a3248; }
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 0 16px 40px; background: var(--bg); color: var(--text); }
+    .sticky-bar { position: sticky; top: 0; background: #4f6ff0; color: #fff; padding: 10px 16px; margin: 0 -16px 16px; z-index: 5; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    #results { white-space: pre-wrap; font: 12px ui-monospace, Consolas, monospace; border: 1px solid var(--border); padding: 12px; border-radius: 8px; }
+    .pass { color: #17a673; } .fail { color: #d6455d; }
+    .tall { height: 900px; background: linear-gradient(#eef1ff, #c9d2ff); border-radius: 8px; padding: 12px; color: #1b2030; }
+  </style>
+</head>
+<body>
+  <div class="sticky-bar">Sticky header (should appear once in full-page shots)</div>
+  <main id="fixtures">
+    <h1 id="main-title">Selector playground</h1>
+    <form class="login-form">
+      <input name="email" type="email" placeholder="Email">
+      <input name="password" type="password" placeholder="Password">
+      <button data-testid="submit-login" class="btn btn-primary css-1k2j3h4">Sign in</button>
+      <button type="button" class="btn">Cancel</button>
+    </form>
+
+    <nav><ul class="menu">
+      <li><a href="/">Home</a></li><li><a href="/pricing">Pricing</a></li><li><a href="/docs">Docs</a></li><li><a href="javascript:void(0)">More</a></li>
+    </ul></nav>
+
+    <div id=":r3:" class="Button_root__a1B2c sc-bdVaJa">React useId + CSS-modules + styled-components</div>
+    <div id="ember1234" class="active is-open">Dynamic id and state classes</div>
+
+    <section class="grid">
+      <article class="card"><h3>First</h3><p>Body one</p><button class="btn">Buy</button></article>
+      <article class="card"><h3>Second</h3><p>Body two</p><button class="btn">Buy</button></article>
+      <article class="card featured"><h3>Third</h3><p>Body three</p><button class="btn">Buy</button></article>
+    </section>
+
+    <div class="flex items-center justify-between p-4 md:p-8 bg-[#123456] hover:bg-blue-500"><span class="text-sm font-bold">Tailwind soup</span></div>
+
+    <div><div><div><div><span>deep anonymous 1</span></div></div></div></div>
+    <div><div><div><div><span>deep anonymous 2</span></div></div></div></div>
+
+    <label for="newsletter">Newsletter</label><input id="newsletter" type="checkbox">
+    <img alt="Company logo" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" width="40" height="20">
+    <svg width="40" height="20"><rect class="bar" width="10" height="20"></rect><rect class="bar" x="15" width="10" height="20"></rect></svg>
+    <table><tbody><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></tbody></table>
+    <my-widget></my-widget>
+    <p data-test="quote">He said "hi" and 'bye'</p>
+
+    <div class="tall">Tall block for full-page stitching</div>
+  </main>
+
+  <h2>Engine tests</h2>
+  <div id="results">running…</div>
+
+  <script>
+    // Minimal chrome.* stub so the content scripts run outside an extension.
+    globalThis.chrome = {
+      storage: { sync: { get: (d, cb) => cb(d) }, local: { get: (d, cb) => cb(d) }, onChanged: { addListener() {} } },
+      runtime: { lastError: null, onMessage: { addListener() {} }, sendMessage: (m, cb) => { (window.__msgs = window.__msgs || []).push(m); cb && cb({ ok: true }); } }
+    };
+    customElements.define('my-widget', class extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' }).innerHTML =
+          '<div class="wrap"><button class="action">Shadow A</button><button class="action">Shadow B</button></div>';
+      }
+    });
+  </script>
+  <script src="../src/shared/defaults.js"></script>
+  <script src="../src/shared/i18n.js"></script>
+  <script src="../src/shared/locales/en.js"></script>
+  <script src="../src/shared/locales/zh_CN.js"></script>
+  <script src="../src/content/selector.js"></script>
+  <script src="../src/content/picker.js"></script>
+  <script>
+    (function run() {
+      const S = BS_Selector;
+      const out = [];
+      let pass = 0, fail = 0;
+      const check = (name, ok, detail) => { ok ? pass++ : fail++; out.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  →  ' + detail : ''}`); };
+      const $ = (s) => document.querySelector(s);
+
+      // 1. Every element in the fixtures (plus shadow DOM) gets a unique selector & XPath.
+      const all = [...document.querySelectorAll('#fixtures, #fixtures *')];
+      const w = $('my-widget');
+      all.push(...w.shadowRoot.querySelectorAll('*'));
+      let worst = 0, worstSel = '', nonUnique = [], badX = [];
+      const t0 = performance.now();
+      for (const el of all) {
+        const t = performance.now();
+        const r = S.css(el);
+        worst = Math.max(worst, performance.now() - t);
+        const m = el.getRootNode().querySelectorAll(r.selector);
+        if (m.length !== 1 || m[0] !== el) nonUnique.push(r.selector);
+        for (const alt of r.alternatives) {
+          const ma = el.getRootNode().querySelectorAll(alt);
+          if (ma.length !== 1 || ma[0] !== el) nonUnique.push('alt: ' + alt);
+        }
+        const xp = S.xpath(el);
+        if (xp) {
+          const res = document.evaluate(xp, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+          if (res.snapshotLength !== 1 || res.snapshotItem(0) !== el) badX.push(xp);
+        }
+      }
+      const total = performance.now() - t0;
+      check(`all ${all.length} elements → unique CSS (incl. alternatives)`, nonUnique.length === 0, nonUnique.slice(0, 5).join(' | '));
+      check(`all elements → unique XPath`, badX.length === 0, badX.slice(0, 5).join(' | '));
+      check(`performance: total ${total.toFixed(0)}ms, worst ${worst.toFixed(1)}ms`, worst < 150);
+
+      // 2. Expected "best" selectors.
+      const expect = [
+        ['[data-testid="submit-login"]', $('[data-testid="submit-login"]')],
+        ['#main-title', $('#main-title')],
+        ['input[name="email"]', $('input[name="email"]')],
+        ['a[href="/pricing"]', $('a[href="/pricing"]')],
+        ['img[alt="Company logo"]', $('img')],
+        ['label[for="newsletter"]', $('label')],
+        ['#newsletter', $('#newsletter')],
+        ['[data-test="quote"]', $('[data-test="quote"]')],
+        ['.featured', $('.featured')],
+      ];
+      for (const [want, el] of expect) {
+        const got = S.css(el).selector;
+        check(`best for ${want}`, got === want, got);
+      }
+
+      // 3. Generated / state tokens are never used.
+      const dyn = S.css(document.getElementById(':r3:')).selector;
+      check('skips React useId / CSS-module / styled-components', !/r3|a1B2c|bdVaJa/.test(dyn), dyn);
+      const dyn2 = S.css(document.getElementById('ember1234')).selector;
+      check('skips ember id and state classes', !/ember|active|is-open/.test(dyn2), dyn2);
+      const sc = S.css($('.login-form button[data-testid]'), {}).alternatives.join(' ');
+      check('skips css-in-js hash class in alternatives', !/css-1k2j3h4/.test(sc), sc);
+
+      // 4. Shadow DOM
+      const sb = w.shadowRoot.querySelectorAll('button')[1];
+      const sr = S.css(sb);
+      check('shadow DOM: host chain + inner selector', sr.inShadow && sr.hostChain[0] === 'my-widget', JSON.stringify(sr.hostChain) + ' ' + sr.selector);
+      const js = S.jsPath(sb, sr);
+      check('JS path resolves', eval(js) === sb, js);
+      check('XPath is null inside shadow DOM', S.xpath(sb) === null);
+
+      // 5. Repeated cards
+      const second = document.querySelectorAll('.card h3')[1];
+      check('second card title', true, S.css(second).selector + '   xpath: ' + S.xpath(second));
+      check('deep anonymous span', true, S.css(document.querySelectorAll('#fixtures > div > div > div > div > span')[1]).selector);
+      check('tailwind span', true, S.css($('.text-sm')).selector);
+      check('svg rect #2', true, S.css(document.querySelectorAll('rect')[1]).selector + '   xpath: ' + S.xpath(document.querySelectorAll('rect')[1]));
+      check('quote xpath escaping', true, S.xpath($('[data-test="quote"]').firstChild ? $('[data-test="quote"]') : null));
+
+      const summary = `${pass} passed, ${fail} failed\n\n`;
+      const box = document.getElementById('results');
+      box.innerHTML = '';
+      box.append(summary);
+      out.forEach((line) => {
+        const s = document.createElement('div');
+        s.className = line.startsWith('PASS') ? 'pass' : 'fail';
+        s.textContent = line;
+        box.appendChild(s);
+      });
+      window.__testSummary = { pass, fail, out };
+    })();
+  </script>
+
+  <h2>i18n tests</h2>
+  <div id="i18n-results">running…</div>
+  <script>
+    (async function i18nTests() {
+      const out = [];
+      let pass = 0, fail = 0;
+      const check = (name, ok, detail) => { ok ? pass++ : fail++; out.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  →  ' + detail : ''}`); };
+      const L = BS_LOCALES;
+      const codes = BS_LANGUAGES.map((l) => l.code);
+      const ph = (s) => (String(s).match(/\{\d+\}/g) || []).sort().join(',');
+
+      // 1. Every language has exactly the English keys and the same placeholders.
+      for (const code of codes) {
+        check(`locale ${code} registered`, !!L[code]);
+        if (!L[code] || code === 'en') continue;
+        const missing = Object.keys(L.en).filter((k) => !(k in L[code]));
+        const extra = Object.keys(L[code]).filter((k) => !(k in L.en));
+        const badPh = Object.keys(L.en).filter((k) => k in L[code] && ph(L.en[k]) !== ph(L[code][k]));
+        check(`${code}: no missing keys`, !missing.length, missing.join(', '));
+        check(`${code}: no extra keys`, !extra.length, extra.join(', '));
+        check(`${code}: placeholders match`, !badPh.length, badPh.join(', '));
+      }
+
+      // 2. Every key referenced in HTML/JS exists in en.
+      const files = ['../src/popup/popup.html', '../src/options/options.html', '../src/popup/popup.js', '../src/options/options.js', '../src/content/picker.js', '../src/background.js'];
+      const used = new Set();
+      for (const f of files) {
+        const src = await (await fetch(f)).text();
+        for (const m of src.matchAll(/data-i18n(?:-html|-title|-placeholder|-aria-label)?="(\w+)"/g)) used.add(m[1]);
+        for (const m of src.matchAll(/\b(?:t|BS_t)\('(\w+)'/g)) used.add(m[1]);
+        // keys looked up indirectly via maps such as LABEL_KEYS / KIND_KEYS / CMD_KEYS
+        for (const m of src.matchAll(/'((?:label|kind|cmd)[A-Z]\w*)'/g)) used.add(m[1]);
+      }
+      const unknown = [...used].filter((k) => !(k in L.en));
+      check(`all ${used.size} referenced keys exist`, unknown.length === 0, unknown.join(', '));
+
+      // 3. chrome _locales files have identical keys.
+      const en = await (await fetch('../_locales/en/messages.json')).json();
+      const zh = await (await fetch('../_locales/zh_CN/messages.json')).json();
+      const diff = Object.keys(en).filter((k) => !zh[k]).concat(Object.keys(zh).filter((k) => !en[k]));
+      check('_locales en / zh_CN keys match', !diff.length, diff.join(', '));
+      const manifest = await (await fetch('../manifest.json')).json();
+      const msgRefs = JSON.stringify(manifest).match(/__MSG_(\w+)__/g).map((s) => s.slice(6, -2));
+      const missingMsg = msgRefs.filter((k) => !en[k]);
+      check(`manifest __MSG__ refs (${msgRefs.length}) all defined`, !missingMsg.length, missingMsg.join(', '));
+
+      // 4. Resolution + formatting
+      const autoFor = (ui) => { chrome.i18n = { getUILanguage: () => ui }; const r = BS_setLocale('auto'); delete chrome.i18n; return r; };
+      check('auto: zh-CN → zh_CN', autoFor('zh-CN') === 'zh_CN');
+      check('auto: zh-TW → zh_CN (fallback)', autoFor('zh-TW') === 'zh_CN');
+      check('auto: fr-FR → en', autoFor('fr-FR') === 'en');
+      check('explicit zh_CN', (BS_setLocale('zh_CN'), BS_t('btnSave')) === '保存');
+      check('substitution', BS_t('pkMatches', 3) === '3 个匹配', BS_t('pkMatches', 3));
+      check('fallback to key for unknown', BS_t('noSuchKey') === 'noSuchKey');
+      BS_setLocale('en');
+      check('english substitution', BS_t('shotSize', 'Element', 10, 20) === 'Element 10×20px', BS_t('shotSize', 'Element', 10, 20));
+
+      const box = document.getElementById('i18n-results');
+      box.style.cssText = 'white-space:pre-wrap;font:12px ui-monospace,Consolas,monospace;border:1px solid var(--border);padding:12px;border-radius:8px';
+      box.textContent = `${pass} passed, ${fail} failed\n\n`;
+      out.forEach((line) => { const s = document.createElement('div'); s.className = line.startsWith('PASS') ? 'pass' : 'fail'; s.textContent = line; box.appendChild(s); });
+      window.__i18nSummary = { pass, fail, out };
+    })();
+  </script>
+
+  <h2>Regression tests</h2>
+  <div id="reg-results">running…</div>
+  <script>
+    (async function regressionTests() {
+      await new Promise((r) => { const c = () => (window.__i18nSummary ? r() : setTimeout(c, 50)); c(); });
+      const out = [];
+      let pass = 0, fail = 0;
+      const check = (name, ok, detail) => { ok ? pass++ : fail++; out.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  →  ' + detail : ''}`); };
+
+      // 1. No local binding may shadow the translate helper `t` (caused "t is not a function" on S).
+      for (const f of ['../src/content/picker.js', '../src/popup/popup.js', '../src/options/options.js']) {
+        const src = await (await fetch(f)).text();
+        const lines = src.split('\n');
+        const bad = [];
+        lines.forEach((line, i) => {
+          if (/^\s*const t = (globalThis\.)?BS_t;/.test(line)) return; // the helper itself
+          if (/\b(const|let|var)\s+t\b\s*=|\(\s*t\s*[,)]\s*=>|[(,]\s*t\s*\)\s*=>|\(\s*t\s*,/.test(line)) bad.push(`${f.split('/').pop()}:${i + 1}`);
+        });
+        check(`${f.split('/').pop()}: nothing shadows t()`, !bad.length, bad.join(', '));
+      }
+
+      // 2. Screenshot toast with buttons renders, and an element screenshot completes end-to-end.
+      let toastErr = '';
+      try { __BS_PICKER__.toast('test', { buttons: [{ text: 'Save', onClick() {} }] }); } catch (e) { toastErr = e.message; }
+      check('toast with buttons renders', !toastErr, toastErr);
+
+      const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const realSend = chrome.runtime.sendMessage;
+      const msgs = [];
+      chrome.runtime.sendMessage = (m, cb) => { msgs.push(m); cb && cb({ ok: true, ...(m.type === 'compose' ? { dataUrl: PNG, pngDataUrl: PNG, width: m.width, height: m.height, filename: 'x.png' } : {}) }); };
+      const errs = [];
+      const origErr = console.error; console.error = (...a) => { errs.push(a.join(' ')); origErr(...a); };
+      await __BS_PICKER__.screenshotElement(document.querySelector('[data-testid]'));
+      await __BS_PICKER__.screenshotFull();
+      console.error = origErr;
+      chrome.runtime.sendMessage = realSend;
+      const shots = msgs.filter((m) => m.type === 'history-add' && m.entry.kind === 'screenshot');
+      check('element + full-page screenshots reach the result toast', shots.length === 2, shots.map((s) => s.entry.value).join(' | ') || 'no screenshot finished');
+      window.scrollTo(0, 0);
+
+      // 3. A newer build replaces the old instance instead of being skipped.
+      const before = __BS_PICKER__;
+      window.__BS_BUILD__ = 'test-build-2';
+      await new Promise((res, rej) => { const s = document.createElement('script'); s.src = '../src/content/picker.js?v2'; s.onload = res; s.onerror = rej; document.body.appendChild(s); });
+      const hosts = document.querySelectorAll('browser-selector-ui').length;
+      check('re-injection replaces the old picker', __BS_PICKER__ !== before && window.__BROWSER_SELECTOR__ === 'test-build-2' && hosts <= 1, `hosts=${hosts}, build=${window.__BROWSER_SELECTOR__}`);
+      const again = __BS_PICKER__;
+      await new Promise((res) => { const s = document.createElement('script'); s.src = '../src/content/picker.js?v2b'; s.onload = res; document.body.appendChild(s); });
+      check('same build is not injected twice', __BS_PICKER__ === again);
+      await __BS_PICKER__.start();
+      check('replacement picker starts', __BS_PICKER__.state.active === true);
+      __BS_PICKER__.stop();
+
+      const box = document.getElementById('reg-results');
+      box.style.cssText = 'white-space:pre-wrap;font:12px ui-monospace,Consolas,monospace;border:1px solid var(--border);padding:12px;border-radius:8px';
+      box.textContent = `${pass} passed, ${fail} failed\n\n`;
+      out.forEach((line) => { const s = document.createElement('div'); s.className = line.startsWith('PASS') ? 'pass' : 'fail'; s.textContent = line; box.appendChild(s); });
+      window.__regSummary = { pass, fail, out };
+    })();
+  </script>
+
+  <h2>Simplified shortcut tests</h2>
+  <div id="ux-results">running…</div>
+  <script>
+    (async function uxTests() {
+      await new Promise((r) => { const c = () => (window.__regSummary ? r() : setTimeout(c, 50)); c(); });
+      const out = [];
+      let pass = 0, fail = 0;
+      const check = (name, ok, detail) => { ok ? pass++ : fail++; out.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  →  ' + detail : ''}`); };
+      const P = __BS_PICKER__;
+      const sh = P._shadow;
+      const menu = sh.querySelector('.menu');
+      const msgs = [];
+      chrome.runtime.sendMessage = (m, cb) => { msgs.push(m); cb && cb({ ok: true }); };
+      navigator.clipboard.writeText = async () => {};
+      const copies = () => msgs.filter((m) => m.type === 'history-add').map((m) => m.entry);
+      const fire = (type, el, extra) => {
+        const r = el.getBoundingClientRect();
+        const Ctor = type.startsWith('pointer') ? PointerEvent : MouseEvent;
+        el.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true, composed: true, clientX: r.left + 3, clientY: r.top + 3, button: 0, ...extra }));
+      };
+      const key = (k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+
+      // manifest: every suggested shortcut is at most two keys
+      const manifest = await (await fetch('../manifest.json')).json();
+      const keys = Object.entries(manifest.commands).flatMap(([n, c]) => (c.suggested_key ? Object.values(c.suggested_key).map((k) => `${n}=${k}`) : []));
+      check('manifest shortcuts are ≤ 2 keys', keys.every((k) => k.split('=')[1].split('+').length <= 2), keys.join(', '));
+      const sk = (n) => manifest.commands[n].suggested_key || {};
+      check('picker shortcut is Alt+C', sk('toggle-picker').default === 'Alt+C' && sk('toggle-picker').mac === 'Alt+C');
+      check('visible screenshot is Alt+S', sk('screenshot-visible').default === 'Alt+S' && sk('screenshot-visible').mac === 'Alt+S');
+      check('full-page screenshot is Alt+A', sk('screenshot-full').default === 'Alt+A' && sk('screenshot-full').mac === 'Alt+A');
+      const defaults = Object.values(manifest.commands).map((c) => (c.suggested_key || {}).default).filter(Boolean);
+      check('no duplicate global shortcuts', new Set(defaults).size === defaults.length, defaults.join(', '));
+
+      window.scrollTo(0, 0);
+      await P.start();
+      const target = document.querySelector('a[href="/pricing"]');
+      P.select(target);
+
+      // right-click opens the menu
+      fire('contextmenu', target, { button: 2 });
+      check('right-click opens the menu', P.state.menuOpen && menu.style.display === 'block');
+      check('menu has every action', menu.querySelectorAll('button[data-act]').length === 10);
+
+      // Esc closes the menu but keeps the picker on
+      key('Escape');
+      check('Esc closes menu, picker stays on', !P.state.menuOpen && P.state.active);
+
+      // a click outside the open menu only closes it (no copy)
+      fire('contextmenu', target, { button: 2 });
+      const before = copies().length;
+      fire('pointerdown', target); fire('mousedown', target); fire('mouseup', target); fire('click', target);
+      await new Promise((r) => setTimeout(r, 30));
+      check('click outside closes menu without copying', !P.state.menuOpen && copies().length === before && P.state.active);
+
+      // menu item copies XPath
+      fire('contextmenu', target, { button: 2 });
+      menu.querySelector('[data-act="xpath"]').click();
+      await new Promise((r) => setTimeout(r, 30));
+      const last = copies().pop();
+      check('menu → Copy XPath', last && last.kind === 'xpath' && !P.state.menuOpen, last && last.value);
+
+      // panel Parent button selects + locks, Copy CSS copies the parent and releases the lock
+      sh.querySelector('.bar [data-act="parent"]').click();
+      check('Parent button selects parent and locks', P.state.hovered === target.parentElement && P.state.locked);
+      sh.querySelector('.bar [data-act="css"]').click();
+      await new Promise((r) => setTimeout(r, 30));
+      const parentCopy = copies().pop();
+      check('Copy CSS button copies the parent, lock released', parentCopy && parentCopy.kind === 'css' && !P.state.locked, parentCopy && parentCopy.value);
+
+      // basic hint is the only visible key help; full list hidden until "?"
+      check('advanced key list hidden by default', sh.querySelector('.keys').classList.contains('hidden'));
+      P.stop();
+
+      const box = document.getElementById('ux-results');
+      box.style.cssText = 'white-space:pre-wrap;font:12px ui-monospace,Consolas,monospace;border:1px solid var(--border);padding:12px;border-radius:8px';
+      box.textContent = `${pass} passed, ${fail} failed\n\n`;
+      out.forEach((line) => { const s = document.createElement('div'); s.className = line.startsWith('PASS') ? 'pass' : 'fail'; s.textContent = line; box.appendChild(s); });
+      window.__uxSummary = { pass, fail, out };
+    })();
+  </script>
+</body>
+</html>
