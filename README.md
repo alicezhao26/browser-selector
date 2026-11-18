@@ -1,5 +1,7 @@
 # Browser Selector
 
+English | [简体中文](README.zh-CN.md)
+
 A Chrome extension (Manifest V3) for grabbing page elements with one shortcut and the mouse: copy the **best CSS selector**, XPath, JS path, text or HTML, and take **element / visible / full-page screenshots**.
 
 ## Install (developer mode)
